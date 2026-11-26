@@ -1,0 +1,79 @@
+from __future__ import annotations
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+from app.db import db, rows_to_list
+from app.services.common import audit, now_str
+from app.services.projection import projection_stamp, rebuild_projection, roster_view
+from app.services import overview_fork_surface
+
+router = APIRouter(tags=["应用"])
+
+
+class AppIn(BaseModel):
+    名称: str = Field(min_length=1)
+    负责人: str = ""
+    状态: str = "启用"
+
+
+@router.get("/应用")
+def list_apps():
+    with db() as conn:
+        return rows_to_list(
+            conn.execute(
+                "SELECT id AS 编号, name AS 名称, owner AS 负责人, status AS 状态 FROM apps ORDER BY id"
+            ).fetchall()
+        )
+
+
+@router.get("/应用名册")
+def app_roster():
+    """名册三环境版本列：读分布事件投影缓存，与总览/对账同一真源。"""
+    with db() as conn:
+        return {"名册": roster_view(conn), "投影": projection_stamp(conn)}
+
+
+@router.post("/应用")
+def create_app(body: AppIn):
+    if body.状态 not in ("启用", "停用"):
+        raise HTTPException(400, "状态仅允许启用或停用")
+    with db() as conn:
+        try:
+            cur = conn.execute(
+                "INSERT INTO apps(name, owner, status) VALUES (?, ?, ?)",
+                (body.名称, body.负责人, body.状态),
+            )
+        except Exception:
+            raise HTTPException(400, "应用名已存在")
+        aid = cur.lastrowid
+        # 新应用无任何分布事件：重投影后三环境列均为空版本（空事件集语义）
+        task = rebuild_projection(conn, triggered_by="新建应用", note=body.名称)
+        audit(conn, "应用", aid, "新建应用", body.名称)
+        return {"编号": aid, "投影": task}
+
+
+@router.patch("/应用/{app_id}")
+def patch_app(app_id: int, body: AppIn):
+    with db() as conn:
+        row = conn.execute("SELECT id FROM apps WHERE id=?", (app_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "应用不存在")
+        if body.状态 not in ("启用", "停用"):
+            raise HTTPException(400, "状态仅允许启用或停用")
+        conn.execute(
+            "UPDATE apps SET name=?, owner=?, status=? WHERE id=?",
+            (body.名称, body.负责人, body.状态, app_id),
+        )
+        audit(conn, "应用", app_id, "更新应用", body.状态)
+        return {"编号": app_id, "更新时间": now_str()}
+
+def _apps_panel_overview30(conn=None):
+    if conn is None:
+        return {"apps_panel": "overview30"}
+    try:
+        return {
+            "apps_panel": "overview30",
+            "surface_ok": overview_fork_surface.get_setting(conn, "surface_ok", "0") == "1",
+        }
+    except Exception:
+        return {"apps_panel": "overview30"}
+
