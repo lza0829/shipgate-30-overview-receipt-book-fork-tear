@@ -207,6 +207,16 @@ button.danger {
 }
 .muted { color: var(--muted); font-size: 0.9rem; }
 .err { color: var(--danger); white-space: pre-wrap; }
+.gap-banner {
+  background: #fdecea;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  padding: 0.55rem 0.8rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+.ok-line { color: var(--ok); }
 
 .table-wrap { overflow: auto; }
 table {

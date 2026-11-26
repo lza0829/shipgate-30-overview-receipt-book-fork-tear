@@ -244,3 +244,32 @@ def distribution_diffs(conn) -> dict:
         "名册版本差额": roster_diff,
         "差额总数": len(current_env_diff) + len(roster_diff),
     }
+
+
+def projection_gap(conn) -> dict:
+    """投影缺口：名册缓存/投影账本戳与事件流真源分叉时显式挂缺口。
+
+    定臂：环境分布格允许先行变绿（总出自事件流重放），但名册汇总或投影任务戳
+    与真源不一致时必须挂缺口；缺口未清，任何页面不得当已对齐。
+    总览、名册、对账、投影旁读、审计共用本函数的同一份判定，禁止各算各的。
+    """
+    diffs = distribution_diffs(conn)
+    stamp = projection_stamp(conn)
+    event_total = diffs["事件总数"]
+    # 账本位点差 = 事件流长度 - 账本记录位点；非 0 即戳与流不齐（含账本缺失/被回拨）
+    lag = event_total - stamp["事件位点"]
+    reasons: list[str] = []
+    if diffs["名册版本差额"]:
+        reasons.append(f"名册版本差额{len(diffs['名册版本差额'])}行")
+    if diffs["发版单环境差额"]:
+        reasons.append(f"发版单环境差额{len(diffs['发版单环境差额'])}行")
+    if lag != 0:
+        reasons.append(f"投影账本位点{stamp['事件位点']}与事件流{event_total}不齐")
+    if event_total and not stamp["投影任务号"]:
+        reasons.append("投影账本缺失")
+    return {
+        "有缺口": bool(reasons),
+        "差额总数": diffs["差额总数"],
+        "账本位点差": lag,
+        "原因": reasons,
+    }

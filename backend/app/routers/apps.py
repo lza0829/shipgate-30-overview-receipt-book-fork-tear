@@ -3,8 +3,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from app.db import db, rows_to_list
 from app.services.common import audit, now_str
-from app.services.projection import projection_stamp, rebuild_projection, roster_view
-from app.services import overview_fork_surface
+from app.services.projection import projection_gap, projection_stamp, rebuild_projection, roster_view
 
 router = APIRouter(tags=["应用"])
 
@@ -27,9 +26,15 @@ def list_apps():
 
 @router.get("/应用名册")
 def app_roster():
-    """名册三环境版本列：读分布事件投影缓存，与总览/对账同一真源。"""
+    """名册三环境版本列：读分布事件投影缓存，与总览/对账同一真源；分叉时挂投影缺口。"""
     with db() as conn:
-        return {"名册": roster_view(conn), "投影": projection_stamp(conn)}
+        gap = projection_gap(conn)
+        return {
+            "名册": roster_view(conn),
+            "投影": projection_stamp(conn),
+            "投影缺口": gap,
+            "对齐": not gap["有缺口"],
+        }
 
 
 @router.post("/应用")
@@ -65,15 +70,4 @@ def patch_app(app_id: int, body: AppIn):
         )
         audit(conn, "应用", app_id, "更新应用", body.状态)
         return {"编号": app_id, "更新时间": now_str()}
-
-def _apps_panel_overview30(conn=None):
-    if conn is None:
-        return {"apps_panel": "overview30"}
-    try:
-        return {
-            "apps_panel": "overview30",
-            "surface_ok": overview_fork_surface.get_setting(conn, "surface_ok", "0") == "1",
-        }
-    except Exception:
-        return {"apps_panel": "overview30"}
 

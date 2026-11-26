@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 
-const surface_panel = true
 export default function Apps() {
   const [rows, setRows] = useState([])
   const [roster, setRoster] = useState([])
   const [stamp, setStamp] = useState(null)
+  const [gap, setGap] = useState(null)
   const [name, setName] = useState('')
   const [owner, setOwner] = useState('')
   const [err, setErr] = useState('')
@@ -14,6 +14,7 @@ export default function Apps() {
     setRows(apps)
     setRoster(r.名册 || [])
     setStamp(r.投影 || null)
+    setGap(r.投影缺口 || null)
   }
   useEffect(() => { load().catch((e) => setErr(e.message)) }, [])
   const create = async () => {
@@ -38,6 +39,11 @@ export default function Apps() {
         <p className="muted">
           名册版本由事件重投影维护 · 投影任务号 {stamp.投影任务号} · 版本/刷新戳 {stamp.刷新戳 || '-'}
         </p>
+      )}
+      {gap?.有缺口 && (
+        <div className="gap-banner" role="alert">
+          投影缺口：{(gap.原因 || []).join('；')} —— 名册汇总与事件真源分叉，请到对账页重放纠偏
+        </div>
       )}
       <div className="row">
         <label>名称<input value={name} onChange={(e) => setName(e.target.value)} /></label>

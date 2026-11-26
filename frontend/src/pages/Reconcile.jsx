@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 
-const surface_panel = true
 export default function Reconcile() {
   const [data, setData] = useState(null)
   const [err, setErr] = useState('')
@@ -32,7 +31,16 @@ export default function Reconcile() {
           事件位点 {data.投影.事件位点}
         </p>
       )}
+      {data.投影缺口?.有缺口 && (
+        <div className="gap-banner" role="alert">
+          投影缺口未清，对账不得当已对齐：{(data.投影缺口.原因 || []).join('；')}
+        </div>
+      )}
       <div className="grid">
+        <div className="stat">
+          <div className="n">{data.对齐 ? '已对齐' : '未对齐'}</div>
+          <div className="l">对齐状态</div>
+        </div>
         {Object.entries(s).map(([k, v]) => (
           <div className="stat" key={k}><div className="n">{v}</div><div className="l">{k}</div></div>
         ))}

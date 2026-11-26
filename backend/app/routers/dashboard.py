@@ -4,10 +4,10 @@ from app.db import db, rows_to_list
 from app.services.common import RELEASE_SELECT
 from app.services.projection import (
     environment_distribution,
+    projection_gap,
     projection_stamp,
     roster_view,
 )
-from app.services import overview_fork_surface
 
 router = APIRouter(tags=["总览"])
 
@@ -31,6 +31,8 @@ def overview():
         )
         # 名册三环境版本列：投影缓存，与四格同一次重放、同一刷新戳
         versions = roster_view(conn)
+        # 投影缺口：名册汇总或投影戳与事件真源分叉时挂缺口，拧花不得维持齐绿
+        gap = projection_gap(conn)
         health = rows_to_list(
             conn.execute(
                 """
@@ -47,12 +49,10 @@ def overview():
             "状态分布": status_counts,
             "环境分布": dist,
             "投影": projection_stamp(conn),
+            "投影缺口": gap,
+            "对齐": not gap["有缺口"],
             "在途": active,
             "环境版本": versions,
             "实例": health,
         }
-
-# surface panel hook kept for overview consumers
-def _surface_overview_note():
-    return "overview_fork_surface"
 

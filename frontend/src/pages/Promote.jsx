@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 
-const surface_panel = true
 export default function Promote() {
   const [rows, setRows] = useState([])
   const [events, setEvents] = useState([])
   const [stamp, setStamp] = useState(null)
+  const [gap, setGap] = useState(null)
   const [rid, setRid] = useState('')
   const [env, setEnv] = useState('预')
   const [err, setErr] = useState('')
@@ -17,6 +17,7 @@ export default function Promote() {
     const d = await api('/分布事件')
     setEvents(d.事件流 || [])
     setStamp(d.投影 || null)
+    setGap(d.投影缺口 || null)
     if (!rid && active[0]) setRid(String(active[0].编号))
   }
   useEffect(() => { load().catch((e) => setErr(e.message)) }, [])
@@ -36,6 +37,11 @@ export default function Promote() {
       {info && <p className="muted">{info}</p>}
       {stamp && (
         <p className="muted">分布真源事件流 · 投影任务号 {stamp.投影任务号} · 刷新戳 {stamp.刷新戳 || '-'} · 位点 {stamp.事件位点}</p>
+      )}
+      {gap?.有缺口 && (
+        <div className="gap-banner" role="alert">
+          投影缺口：{(gap.原因 || []).join('；')} —— 晋升前请先到对账页按事件真源重放纠偏
+        </div>
       )}
       <div className="row">
         <label>发版单

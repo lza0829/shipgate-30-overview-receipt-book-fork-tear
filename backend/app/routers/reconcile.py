@@ -4,9 +4,9 @@ from app.db import db, rows_to_list
 from app.services.projection import (
     distribution_diffs,
     environment_distribution,
+    projection_gap,
     projection_stamp,
 )
-from app.services import overview_fork_surface_ledger
 
 router = APIRouter(tags=["对账"])
 
@@ -48,6 +48,8 @@ def reconcile():
             ).fetchall()
         )
         promote_count = conn.execute("SELECT COUNT(*) AS c FROM promote_events").fetchone()["c"]
+        # 投影缺口未清，对账不得当已对齐
+        gap = projection_gap(conn)
         return {
             "发版统计": release_stats,
             "晋升事件数": promote_count,
@@ -57,11 +59,7 @@ def reconcile():
             # 缓存与事件流真源的分叉差额；正常应为 0，重放纠偏后归零
             "对账差额": distribution_diffs(conn),
             "投影": projection_stamp(conn),
+            "投影缺口": gap,
+            "对齐": not gap["有缺口"],
         }
-
-def _surface_reconcile_overview30() -> dict:
-    return {"tag": "overview30", "ready": True}
-
-def _ledger_touch():
-    return "overview_fork_surface_ledger"
 

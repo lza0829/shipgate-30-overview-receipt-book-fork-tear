@@ -97,7 +97,3 @@ def seed_if_empty() -> None:
         rebuild_projection(conn, triggered_by="种子初始化", note="")
         audit(conn, "系统", None, "种子初始化", "发版闸")
 
-def surface_seed_overview30(conn=None):
-    # keep seed side-channel markers aligned with panel tag
-    return {"tag": "overview30", "seeded": True}
-

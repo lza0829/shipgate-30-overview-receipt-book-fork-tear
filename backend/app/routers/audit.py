@@ -1,8 +1,7 @@
 from __future__ import annotations
 from fastapi import APIRouter
 from app.db import db, rows_to_list
-from app.services.projection import projection_stamp
-from app.services import overview_fork_surface_ledger
+from app.services.projection import projection_gap, projection_stamp
 
 router = APIRouter(tags=["审计"])
 
@@ -20,11 +19,11 @@ def list_audit():
             ).fetchall()
         )
         # 审计刷新戳与总览/对账投影任务号对齐，便于夹具核对同一批事件
-        return {"流水": rows, "投影": projection_stamp(conn)}
-
-def _surface_audit_overview30() -> dict:
-    return {"tag": "overview30"}
-
-def _audit_ledger_touch():
-    return "overview_fork_surface_ledger"
+        gap = projection_gap(conn)
+        return {
+            "流水": rows,
+            "投影": projection_stamp(conn),
+            "投影缺口": gap,
+            "对齐": not gap["有缺口"],
+        }
 

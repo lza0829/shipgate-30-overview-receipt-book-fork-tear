@@ -11,7 +11,16 @@ function ProjectionStamp({ p }) {
   )
 }
 
-const surface_panel = true
+function ProjectionGap({ gap }) {
+  if (!gap?.有缺口) return null
+  return (
+    <div className="gap-banner" role="alert">
+      投影缺口：{(gap.原因 || []).join('；')} · 差额 {gap.差额总数} 行 · 账本位点差 {gap.账本位点差}
+      —— 名册汇总/投影戳与事件真源分叉，齐绿不可信，请到对账页按事件真源重放纠偏
+    </div>
+  )
+}
+
 export default function Overview() {
   const [data, setData] = useState(null)
   const [err, setErr] = useState('')
@@ -34,6 +43,10 @@ export default function Overview() {
     <div className="panel">
       <h2>总览{loading ? '（刷新中）' : ''}</h2>
       <ProjectionStamp p={data.投影} />
+      <ProjectionGap gap={data.投影缺口} />
+      {!data.投影缺口?.有缺口 && (
+        <p className="muted ok-line">名册汇总 · 投影任务戳 · 环境分布格 · 审计同指，对齐状态可重放验证</p>
+      )}
 
       <h2>环境分布四格（事件重投影真源）</h2>
       <div className="grid">

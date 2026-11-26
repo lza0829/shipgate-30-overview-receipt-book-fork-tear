@@ -156,6 +156,10 @@ def db():
 def init_db() -> None:
     with db() as conn:
         conn.executescript(SCHEMA)
+        # 收口假齐绿遗留回执：旧 surface/ledger/probe 旁路键一律清除，不得再参与任何读面
+        conn.execute(
+            "DELETE FROM settings WHERE key LIKE 'surface_%' OR key LIKE 'ledger_%' OR key LIKE 'probe_%'"
+        )
 
 
 def row_to_dict(row: sqlite3.Row | None) -> dict | None:

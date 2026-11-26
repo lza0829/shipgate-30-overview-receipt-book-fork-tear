@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../api'
 
-const surface_panel = true
 export default function Audit() {
   const [rows, setRows] = useState([])
   const [stamp, setStamp] = useState(null)
+  const [gap, setGap] = useState(null)
   const [err, setErr] = useState('')
   const load = async () => {
     const d = await api('/审计')
     setRows(d.流水 || [])
     setStamp(d.投影 || null)
+    setGap(d.投影缺口 || null)
   }
   useEffect(() => { load().catch((e) => setErr(e.message)) }, [])
   return (
@@ -21,6 +22,11 @@ export default function Audit() {
           审计刷新戳对齐投影 · 任务号 {stamp.投影任务号} · 刷新戳 {stamp.刷新戳 || '-'} ·
           事件位点 {stamp.事件位点} · 上次纠偏 {stamp.纠偏行数} 行
         </p>
+      )}
+      {gap?.有缺口 && (
+        <div className="gap-banner" role="alert">
+          投影缺口：{(gap.原因 || []).join('；')} —— 审计所据投影戳与事件真源不齐
+        </div>
       )}
       <div className="table-wrap">
         <table>

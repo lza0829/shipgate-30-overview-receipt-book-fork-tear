@@ -5,6 +5,7 @@ from app.db import db, rows_to_list
 from app.services.projection import (
     distribution_diffs,
     environment_distribution,
+    projection_gap,
     projection_stamp,
     rebuild_projection,
 )
@@ -36,11 +37,14 @@ def list_distribution_events():
                 """
             ).fetchall()
         )
+        gap = projection_gap(conn)
         return {
             "事件流": events,
             "分布": environment_distribution(conn),
             "投影": projection_stamp(conn),
             "差额": distribution_diffs(conn),
+            "投影缺口": gap,
+            "对齐": not gap["有缺口"],
         }
 
 

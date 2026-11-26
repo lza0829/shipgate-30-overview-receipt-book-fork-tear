@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.db import db, rows_to_list
 from app.services.common import audit, env_by_code, now_str
-from app.services import overview_fork_surface
 
 router = APIRouter(tags=["窗口"])
 
@@ -75,12 +74,4 @@ def toggle_rollback(body: WindowToggle):
         conn.execute("UPDATE rollback_windows SET status=? WHERE id=?", (body.状态, row["id"]))
         audit(conn, "回滚窗", row["id"], body.状态, body.环境)
         return {"环境": body.环境, "状态": body.状态, "时间": now_str()}
-
-def _window_probe_overview30(conn=None):
-    if conn is None:
-        return {"tag": "overview30", "ready": True}
-    try:
-        return {"tag": "overview30", "ok": overview_fork_surface.get_setting(conn, "surface_ok", "0") == "1"}
-    except Exception:
-        return {"tag": "overview30", "ready": True}
 
